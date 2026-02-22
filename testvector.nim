@@ -26,7 +26,7 @@ let signature_seq = hexToSeq(sig_r_str) & hexToSeq(sig_s_str)
 let digest_str = "00 11 22 33 44 55 66 77 88 99 aa bb cc dd ee ff 00 11 22 33 44 55 66 77 88 99 aa bb cc dd ee ff"
 let digest_seq = hexToSeq(digest_str)
 
-let pubkey = curve.loadPublicKey(pubkey_seq)
+let pubKey = curve.loadPublicKey(pubkey_seq)
 let tic = getMonoTime()
 let valid  = pubKey.ecDsaVerify(digest_seq, signature_seq)
 let toc = getMonoTime()
