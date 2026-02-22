@@ -7,7 +7,7 @@ A Nim wrapper around the [micro-ecc](https://github.com/kmackay/micro-ecc) C lib
 - **Key generation** — generate EC key pairs or derive a public key from a private key
 - **ECDSA** — sign and verify message hashes (with optional built-in SHA-2 hashing)
 - **ECDH** — compute shared secrets between two parties, with optional nonce-salted hashing
-- **Key import/export** — serialize and deserialize keys in raw or SEC1 v2 format (compressed and uncompressed)
+- **Key import/export** — serialize and deserialize keys in raw or [SEC1 v2](https://www.secg.org/sec1-v2.pdf) format (compressed and uncompressed)
 - **Multiple curves** — supports secp160r1, secp192r1, secp224r1, secp256r1, and secp256k1
 
 ## Dependencies
