@@ -18,7 +18,7 @@ A Nim wrapper around the [micro-ecc](https://github.com/kmackay/micro-ecc) C lib
 Clone with submodules:
 
 ```sh
-git clone --recurse-submodules <your-repo-url>
+git clone --recurse-submodules https://github.com/czietz/ecc-nim.git
 ```
 
 ## Usage
