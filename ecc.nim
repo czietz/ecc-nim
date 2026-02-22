@@ -118,7 +118,7 @@ proc useWeakInternalRNG*(seed: int64) {.deprecated: "this RNG is not cryptograph
     ## Use Nim's internal random number generator (RNG)
     ##
     ## This **not cryptographically secure** and should only be used for testing!
-    ## In particular, keys generated while using this RNG are not trustworthy.
+    ## In particular, keys and signatures generated while using this RNG are weak.
     ##
     ## Note: By default, micro-ecc uses the system's secure random generator. This is
     ## the recommended mode of operation.
