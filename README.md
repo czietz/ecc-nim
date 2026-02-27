@@ -1,6 +1,6 @@
 # ecc.nim
 
-A Nim wrapper around the [micro-ecc](https://github.com/kmackay/micro-ecc) C library, providing Elliptic Curve Cryptography (ECC) primitives including ECDSA signing/verification and ECDH shared secret generation.
+A Nim wrapper around the [micro-ecc](https://github.com/kmackay/micro-ecc) C library, providing [Elliptic Curve Cryptography](https://cryptobook.nakov.com/asymmetric-key-ciphers/elliptic-curve-cryptography-ecc) (ECC) primitives including ECDSA signing/verification and ECDH shared secret generation.
 
 ## Features
 
