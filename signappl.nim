@@ -99,6 +99,7 @@ proc do_sign(privkey: string, datafile: string, signfile: string) =
         quit(1)
 
     let privkey = curve.loadPrivateKey(privbytes)
+    zeroSequence(privbytes)
     let hash = do_hash(datafile)
     let sign = privkey.ecDsaSign(hash)
 

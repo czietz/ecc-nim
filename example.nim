@@ -43,3 +43,6 @@ let secretA = ecHashedSharedSecret(bobKeys.public, aliceKeys.private, nonce = "s
 let secretB = ecHashedSharedSecret(aliceKeys.public, bobKeys.private, nonce = "session-id")
 
 assert secretA == secretB  # true
+
+# Clear exported private key from memory
+zeroSequence(rawPriv)

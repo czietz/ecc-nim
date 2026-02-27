@@ -8,6 +8,7 @@
 ## Licensed under the MIT license.
 
 import std/random
+import std/typetraits
 # included as git submodule, to avoid system-wide installation
 import checksums/src/checksums/sha2
 
@@ -79,6 +80,7 @@ proc getSignatureSize*(C: Curve): int = 2 * C.curveSize     ## Returns the lengt
 
 proc getSharedSecretSize*(C: Curve): int = C.curveSize      ## Returns the length in bytes of a ECDH shared secret
 
+
 #-# KEYS, SIGNATURES, AND SHARED SECRETS #-#
 
 type ECPrivateKey* = object
@@ -99,6 +101,28 @@ type ECKeyPair* = tuple
 type ECDSASignature* = seq[char]    ## Represents a ECDSA signature
 
 type ECDHSharedSecret* = seq[char]  ## Represents a ECDH shared secret
+
+
+#-# HELPERS FOR PRIVATE KEY DESTRUCTION #-#
+
+proc zeroSequence*[T](s: seq[T]) =
+    ### Zeroes the contents of a sequence
+    when supportsCopyMem(T):
+        if s.len > 0:
+            zeroMem(addr s[0], s.len * sizeof(T))
+    else:
+        {.error: "T must be a plain data type (no managed fields)".}
+
+proc zeroSequence*(s: string) =
+    ### Zeroes the contents of a string
+    if s.len > 0:
+        zeroMem(addr s[0], s.len)
+
+proc `=destroy`*(P: var ECPrivateKey) =
+    # clear private key data so it's removed from memory
+    zeroSequence(P.key)
+    `=destroy`(P.curve)
+    `=destroy`(P.key)
 
 
 #-# RANDOM NUMBERS #-#
@@ -293,6 +317,7 @@ proc ecHashedSharedSecret*(P: ECPublicKey, Q: ECPrivateKey, nonce: openArray[cha
 when isMainModule:
 
     # run some tests
+    import std/sequtils
 
     # generate a key-pair
     let u = newCurve(Curve_secp160r1)
@@ -325,8 +350,11 @@ when isMainModule:
     doAssert(f == x.public)
 
     let g = u.loadPrivateKey(c)
-
     doAssert(g == x.private)
+
+    # scrub 'c' from memory
+    zeroSequence(c)
+    doAssert(allIt(c, it == '\0'))
 
     # test signature and verification
     let m = "Hello"
