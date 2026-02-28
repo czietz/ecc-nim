@@ -373,12 +373,17 @@ when isMainModule:
     let h = x.private.ecDsaHashAndSign(m)
     let j = x.public.ecDsaHashAndVerify(m, h)
     doAssert(j)
+    let m2 = "Bye!"
+    let j2 = x.public.ecDsaHashAndVerify(m2, h)
+    doAssert(not j2)
 
     # test shared secret generation with a second key pair
     let y = u.makeKeyPair()
 
     let k = ecHashedSharedSecret(x.public, y.private, "nonce")
     let l = ecHashedSharedSecret(y.public, x.private, "nonce")
+    let l2 = ecHashedSharedSecret(y.public, x.private, "ecnon")
     doAssert(k == l)
+    doAssert(k != l2)
 
     echo "All tests passed"
