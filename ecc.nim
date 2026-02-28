@@ -25,8 +25,17 @@ type
     uECC_Curve {.importc: "uECC_Curve", header: "micro-ecc/uECC.h".} = object
         discard
 
+type CurveType* = enum
+    ## Supported curves
+    Curve_secp160r1,
+    Curve_secp192r1,
+    Curve_secp224r1,
+    Curve_secp256r1,
+    Curve_secp256k1,
+
 type Curve* = object
     ## Represents a curve and must be instantiated by newCurve_
+    ctype: CurveType
     curveSize: int
     privateKeySize: int
     publicKeySize: int
@@ -41,16 +50,9 @@ proc uECC_secp224r1(): uECC_Curve {.importc, header: "micro-ecc/uECC.h".}
 proc uECC_secp256r1(): uECC_Curve {.importc, header: "micro-ecc/uECC.h".}
 proc uECC_secp256k1(): uECC_Curve {.importc, header: "micro-ecc/uECC.h".}
 
-type CurveType* = enum
-    ## Supported curves
-    Curve_secp160r1,
-    Curve_secp192r1,
-    Curve_secp224r1,
-    Curve_secp256r1,
-    Curve_secp256k1,
-
 proc newCurve*(T: CurveType): Curve =
     ## Instantiates a curve of given CurveType_
+    result.ctype = T
     case T:
         of Curve_secp160r1:
             result.getCurve = uECC_secp160r1()
@@ -81,6 +83,7 @@ proc getSignatureSize*(C: Curve): int = 2 * C.curveSize     ## Returns the lengt
 
 proc getSharedSecretSize*(C: Curve): int = C.curveSize      ## Returns the length in bytes of a ECDH shared secret
 
+proc getCurveType*(C: Curve): CurveType = C.ctype           ## Returns the CurveType_
 
 #-# KEYS, SIGNATURES, AND SHARED SECRETS #-#
 
@@ -102,6 +105,10 @@ type ECKeyPair* = tuple
 type ECDSASignature* = seq[char]    ## Represents a ECDSA signature
 
 type ECDHSharedSecret* = seq[char]  ## Represents a ECDH shared secret
+
+proc getCurve*(P: ECPrivateKey): Curve = P.curve    ## Returns the Curve_ the key is on
+
+proc getCurve*(P: ECPublicKey): Curve = P.curve     ## Returns the Curve_ the key is on
 
 
 #-# HELPERS FOR PRIVATE KEY DESTRUCTION #-#
