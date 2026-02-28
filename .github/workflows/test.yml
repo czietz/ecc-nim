@@ -25,3 +25,8 @@ jobs:
         run: |
           nim c -r ecc.nim
           nim c -r testvector.nim
+
+      - name: Check that sample code compiles without errors
+        run: |
+          nim c example.nim
+          nim c signappl.nim
