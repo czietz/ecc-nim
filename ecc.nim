@@ -309,8 +309,8 @@ proc ecHashedSharedSecret*(P: ECPublicKey, Q: ECPrivateKey, nonce: openArray[cha
     var ctx = initSha(hasher)
     result = newSeqOfCap[char](hasher.digestLength())
     result.setLen(hasher.digestLength())
-    ctx.update(nonce)
     ctx.update(secret)
+    ctx.update(nonce)
     discard ctx.digest(result)
 
 
