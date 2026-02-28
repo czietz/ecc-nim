@@ -9,6 +9,7 @@
 
 import std/random
 import std/typetraits
+import std/sequtils
 # included as git submodule, to avoid system-wide installation
 import checksums/src/checksums/sha2
 
@@ -232,9 +233,13 @@ proc toBytes*(P: ECPrivateKey): seq[char] =
     ## Exports a private key for storage
     return P.key
 
+proc allZeros(bytes: openArray[char]): bool {.inline.} =
+    allIt(bytes, it == '\0')
+
 proc loadPrivateKey*(C: Curve, bytes: openArray[char]): ECPrivateKey =
     ## Imports a private key
     if bytes.len != C.privateKeySize: raise newException(ECCError, "invalid private key size")
+    if allZeros(bytes): raise newException(ECCError, "invalid private key")
     return ECPrivateKey(curve: C, key: @bytes)
 
 
@@ -318,7 +323,6 @@ proc ecHashedSharedSecret*(P: ECPublicKey, Q: ECPrivateKey, nonce: openArray[cha
 when isMainModule:
 
     # run some tests
-    import std/sequtils
 
     # generate a key-pair
     let u = newCurve(Curve_secp160r1)
@@ -340,7 +344,7 @@ when isMainModule:
     let a3 = newSeq[char](u.getPublicKeySize)
     try:
         discard u.loadPublicKey(a3)
-        doAssert(false, "Failed to recognize invalid key")
+        doAssert(false, "Failed to recognize invalid public key")
     except ECCError:
         discard
 
@@ -355,7 +359,14 @@ when isMainModule:
 
     # scrub 'c' from memory
     zeroSequence(c)
-    doAssert(allIt(c, it == '\0'))
+    doAssert(allZeros(c))
+
+    # test that loading scrubbed key fails
+    try:
+        discard u.loadPrivateKey(c)
+        doAssert(false, "Failed to recognize invalid private key")
+    except ECCError:
+        discard
 
     # test signature and verification
     let m = "Hello"
