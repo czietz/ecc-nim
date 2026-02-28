@@ -100,7 +100,7 @@ This compiles and runs the self-tests at the bottom of the file, exercising key 
 - By default, micro-ecc uses the **system's cryptographically secure RNG**. This is the recommended mode of operation.
 - A `useWeakInternalRNG` proc is available for testing purposes only. It is marked `deprecated` and **must not be used in production**, as the Nim PRNG it uses is not cryptographically secure.
 - Always hash ECDH shared secrets before use as symmetric keys.
-- The destructor for private key objects explicitly zeroes the key data. For plain sequences, such as exported private keys or ECDH shared secrets, no custom destructor is possible. If you worry about leaking secret data in memory, a helper function `zeroSequence` is provided:
+- The destructor for private key objects explicitly zeroes the key data. For plain sequences, such as exported private keys or ECDH shared secrets, no custom destructor is possible. If you worry about leaking secret data in memory, a helper function `zeroSequence` is provided. (You might also use the `defer:` statement to make sure `zeroSequence` is run at the end of the current block.)
 
 ```nim
 # Clear exported private key from memory
