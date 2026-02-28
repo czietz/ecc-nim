@@ -213,11 +213,12 @@ proc loadPublicKey*(C: Curve, bytes: openArray[char], compressed = false): ECPub
     ## raised. Thus, this function may be used with untrusted input.
     if compressed or bytes.len < C.publicKeySize:
         if bytes.len != C.curveSize + 1: raise newException(ECCError, "invalid public key size")
+        if bytes[0] notin {'\x02', '\x03'}: raise newException(ECCError, "invalid compressed public key")
         result = ECPublicKey(curve: C, key: newSeq[char](C.publicKeySize))
         uECC_decompress(addr bytes[0], addr result.key[0], result.curve.getCurve)
     else:
         # support uncompressed key in SEC 1 format (0x04 || key)
-        if (bytes.len == C.publicKeySize + 1) and (bytes[0] == chr(4)):
+        if (bytes.len == C.publicKeySize + 1) and (bytes[0] == '\x04'):
             result = ECPublicKey(curve: C, key: @bytes[1..^1])
         elif bytes.len == C.publicKeySize:
             result = ECPublicKey(curve: C, key: @bytes)
