@@ -188,7 +188,7 @@ proc toBytes*(P: ECPublicKey, compressed = false): seq[char] =
     else:
         return P.key
 
-proc toBytesSec1*(P: ECPublicKey, compressed = false): seq[char] =
+proc toBytesSec1*(P: ECPublicKey): seq[char] =
     ## Exports a public key for storage, in SEC1-v2-compliant *uncompressed* format
     return chr(4) & P.toBytes(false)
 
