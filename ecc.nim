@@ -306,6 +306,7 @@ proc ecHashedSharedSecret*(P: ECPublicKey, Q: ECPrivateKey, nonce: openArray[cha
     ## both parties, with the given `hasher`. Returns the hash, which can be used,
     ## e.g., as session-specific secret.
     let secret = ecSharedSecret(P, Q)
+    defer: zeroSequence(secret)
     var ctx = initSha(hasher)
     result = newSeqOfCap[char](hasher.digestLength())
     result.setLen(hasher.digestLength())
