@@ -31,3 +31,25 @@ jobs:
         run: |
           nim c example.nim
           nim c signappl.nim
+
+      - name: Build documentation
+        run: |
+          # sshcompat imports ecc, use --project to generate docs for both
+          nim doc --project --outdir:"_site" sshcompat.nim
+          # generate index.html redirecting to auto-generated theindex.html
+          cat > "_site/index.html" <<EOF
+          <!DOCTYPE html>
+          <html>
+            <head>
+              <meta charset="utf-8">
+              <meta http-equiv="refresh" content="0; url=./theindex.html">
+              <title>Redirecting…</title>
+            </head>
+            <body>
+              <p>Redirecting to <a href="./theindex.html">documentation</a>…</p>
+            </body>
+          </html>
+          EOF
+
+      - name: Upload documentation for later deployment
+        uses: actions/upload-pages-artifact@v3
