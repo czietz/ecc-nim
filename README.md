@@ -21,6 +21,10 @@ Clone with submodules:
 git clone --recurse-submodules https://github.com/czietz/ecc-nim.git
 ```
 
+## Detailed documentation
+
+[See here for automatically generated documentation](https://czietz.github.io/ecc-nim/) of procedures and types.
+
 ## Usage
 
 ### Choosing a Curve
@@ -109,7 +113,7 @@ zeroSequence(rawPriv)
 
 ## OpenSSH compatibility
 
-A supplementary package `sshcompat` is provided that adds support for OpenSSH-compatible public and private keys and signatures in `ecdsa-sha2-nistp256` format. See the documentation inside the file for a description of functions and limitations.
+A supplementary package `sshcompat` is provided that adds support for OpenSSH-compatible public and private keys and signatures in `ecdsa-sha2-nistp256` format. [See the documentation inside the file](https://czietz.github.io/ecc-nim/) for a description of functions and limitations.
 
 Note: The OpenSSH format adds overhead. If you care about performance and not about OpenSSH compatibility, you should use the functions from ecc.nim instead – as described above.
 
