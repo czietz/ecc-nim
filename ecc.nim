@@ -114,7 +114,7 @@ proc getCurve*(P: ECPublicKey): Curve = P.curve     ## Returns the Curve_ the ke
 #-# HELPERS FOR PRIVATE KEY DESTRUCTION #-#
 
 proc zeroSequence*[T](s: seq[T]) =
-    ### Zeroes the contents of a sequence
+    ## Zeroes the contents of a sequence
     when supportsCopyMem(T):
         if s.len > 0:
             zeroMem(addr s[0], s.len * sizeof(T))
@@ -122,7 +122,7 @@ proc zeroSequence*[T](s: seq[T]) =
         {.error: "T must be a plain data type (no managed fields)".}
 
 proc zeroSequence*(s: string) =
-    ### Zeroes the contents of a string
+    ## Zeroes the contents of a string
     if s.len > 0:
         zeroMem(addr s[0], s.len)
 
