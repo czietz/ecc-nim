@@ -25,6 +25,7 @@ jobs:
         run: |
           nim c -r ecc.nim
           nim c -r testvector.nim
+          nim c -r sshcompat.nim
 
       - name: Check that sample code compiles without errors
         run: |
