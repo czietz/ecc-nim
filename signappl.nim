@@ -1,7 +1,8 @@
 # SPDX-License-Identifier: MIT
 
 ## A simple program using ecc.nim for key and signatures generation
-## and signature verification.
+## and signature verification. Keys and signatures are compatible
+## to OpenSSH's ``ssh-keygen`` command.
 ##
 ## Copyright (c) 2026 Christian Zietz <czietz@gmx.net>
 ##
@@ -10,6 +11,7 @@
 import std/strformat
 import std/parseopt
 import ecc
+import sshcompat
 
 # included as git submodule, to avoid system-wide installation
 import checksums/src/checksums/sha2
@@ -21,7 +23,8 @@ proc writeHelp =
     echo """
 Usage: signappl command --arg:val
 
-Elliptic curve cryptography on secp256r1 curve.
+Elliptic curve cryptography on secp256r1 curve
+with OpenSSH compatible keys and signatures.
 
 Commands:
 
@@ -50,13 +53,13 @@ proc do_keygen(pubkey: string, privkey: string) =
 
     let keys = curve.makeKeyPair()
     try:
-        writeFile(privkey, cast[seq[byte]](keys.private.toBytes))
+        writeFile(privkey, keys.private.toSshKey)
     except IOError:
         echo fmt"Could not write private key file '{privkey}'"
         quit(1)
 
     try:
-        writeFile(pubkey, cast[seq[byte]](keys.public.toBytes(compressed=true)))
+        writeFile(pubkey, keys.public.toSshKey & "\n")
     except IOError:
         echo fmt"Could not write public key file '{pubkey}'"
         quit(1)
@@ -64,8 +67,8 @@ proc do_keygen(pubkey: string, privkey: string) =
     echo fmt"Keys have been written to '{pubkey}' and '{privkey}'"
 
 
-proc do_hash(datafile: string): ShaDigest_256 =
-    var ctx = initSha_256()
+proc do_hash(datafile: string): ShaDigest_512 =
+    var ctx = initSha_512()
     var buffer = newSeqUninit[char](4096)
 
     try:
@@ -80,6 +83,7 @@ proc do_hash(datafile: string): ShaDigest_256 =
         echo fmt"Could not read data file '{datafile}'"
         quit(1)
 
+const namespace = "ecc.nim"
 
 proc do_sign(privkey: string, datafile: string, signfile: string) =
 
@@ -94,17 +98,18 @@ proc do_sign(privkey: string, datafile: string, signfile: string) =
         echo fmt"Could not read private key file '{privkey}'"
         quit(1)
 
-    if privbytes.len != curve.getPrivateKeySize:
-        echo fmt"Invalid private key size. Expected {curve.getPrivateKeySize} bytes"
+    var keys: ECKeyPair
+    try:
+        keys = loadSshKeyPair(privbytes)
+    except ECCError:
+        echo fmt"Invalid private key file '{privkey}'"
         quit(1)
 
-    let privkey = curve.loadPrivateKey(privbytes)
-    zeroSequence(privbytes)
     let hash = do_hash(datafile)
-    let sign = privkey.ecDsaSign(hash)
+    let sign = keys.private.ecDsaSshSign(hash, namespace)
 
     try:
-        writeFile(signfile, cast[seq[byte]](sign))
+        writeFile(signfile, sign)
     except IOError:
         echo fmt"Could not write signature file '{signfile}'"
         quit(1)
@@ -131,21 +136,32 @@ proc do_verify(pubkey: string, datafile: string, signfile: string) =
         echo fmt"Could not read signature file '{signfile}'"
         quit(1)
 
-    var pub: ECPublicKey
+    var pub, pub2: ECPublicKey
     try:
-        pub = curve.loadPublicKey(pubbytes)
+        pub = loadSshPublicKey(pubbytes)
     except ECCError:
-        echo fmt"Invalid public key '{pubkey}'"
+        echo fmt"Invalid public key file '{pubkey}'"
         quit(1)
 
+    echo "Using ECDSA key " & sshFingerPrint(pub)
+
     let hash = do_hash(datafile)
-    let okay = pub.ecDsaVerify(hash, @sigbytes)
+    var expected_namespace = namespace
+    var okay = ecDsaSshVerify(sigbytes, hash, pub2, expected_namespace)
 
-    let res = if okay: "valid" else: "INVALID!"
-
+    # user specified a permitted public key, check that it has been used for the signature
+    let samekey = (pub == pub2)
+    var res: string
+    if okay and samekey:
+        res = "valid."
+    elif okay:
+        echo "Signature was made with " & sshFingerPrint(pub2)
+        res = "INVALID (made with different public key)!"
+    else:
+        res = "INVALID!"
     echo fmt"Signature '{signfile}' of '{datafile}' with key '{pubkey}' is {res}"
 
-    if not okay:
+    if (not okay) or (not samekey):
         quit(1)
 
 
