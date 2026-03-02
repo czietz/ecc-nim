@@ -135,7 +135,7 @@ proc `=destroy`*(P: var ECPrivateKey) =
 
 #-# RANDOM NUMBERS #-#
 
-type rngFunction = proc (dest: ptr UncheckedArray[char], size: cuint): cuint {.cdecl.}
+type rngFunction* = proc (dest: ptr UncheckedArray[char], size: cuint): cuint {.cdecl.}
 proc uECC_get_rng: pointer {.importc, header: "micro-ecc/uECC.h", used.} 
 proc uECC_set_rng(rng: rngFunction) {.importc, header: "micro-ecc/uECC.h", used.}
 
@@ -146,6 +146,22 @@ proc weakPRNG(dest: ptr UncheckedArray[char], size: cuint): cuint {.cdecl, used.
         dest[i] = randstate.rand(char)
     return 1
 
+proc useCustomRNG*(RNG_func: rngFunction) =
+    ## Use custom random number generator (RNG)
+    ##
+    ## By default, micro-ecc uses the system's secure random generator. This is
+    ## the recommended mode of operation. However, on systems where micro-ecc fails
+    ## to find a secure random generator, you can provide your own RNG. This RNG
+    ## must be cryptographically secure, otherwise keys and signatures will be weak!
+    ##
+    ## The function signature of the RNG is:
+    ##
+    ## `proc (dest: ptr UncheckedArray[char], size: cuint): cuint {.cdecl.}`
+    ##
+    ## The RNG must fill in `size` chars into the array `dest` and return 1. It
+    ## can also return 0 to signal that the random generation failed.
+    uECC_set_rng(RNG_func)
+
 proc useWeakInternalRNG*(seed: int64) {.deprecated: "this RNG is not cryptographically secure".} =
     ## Use Nim's internal random number generator (RNG)
     ##
@@ -155,7 +171,7 @@ proc useWeakInternalRNG*(seed: int64) {.deprecated: "this RNG is not cryptograph
     ## Note: By default, micro-ecc uses the system's secure random generator. This is
     ## the recommended mode of operation.
     randstate = initRand(seed)
-    uECC_set_rng(weakPRNG)
+    useCustomRNG(weakPRNG)
 
 
 #-# KEY GENERATION #-#
