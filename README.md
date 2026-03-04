@@ -83,8 +83,8 @@ let aliceKeys = curve.makeKeyPair()
 let bobKeys   = curve.makeKeyPair()
 
 # Both sides compute the same secret
-let secretA = ecHashedSharedSecret(bobKeys.public, aliceKeys.private, nonce = "session-id")
-let secretB = ecHashedSharedSecret(aliceKeys.public, bobKeys.private, nonce = "session-id")
+let secretA = ecHMACSharedSecret(bobKeys.public, aliceKeys.private, nonce = "session-id")
+let secretB = ecHMACSharedSecret(aliceKeys.public, bobKeys.private, nonce = "session-id")
 
 assert secretA == secretB  # true
 ```

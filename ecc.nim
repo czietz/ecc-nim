@@ -364,6 +364,11 @@ proc hmacSha256(key: openArray[char], message: openArray[char]): ShaDigest_256 =
     result = outerCtx.digest()
 
 proc ecHMACSharedSecret*(P: ECPublicKey, Q: ECPrivateKey, nonce: openArray[char] = []): ShaDigest_256 =
+    ## Generates a shared secret with someone else's public key and a private key
+    ##
+    ## Then performs a HMAC SHA256 with the shared secret as key and the optional `nonce`,
+    ## which must be shared by both parties. Returns the HMAC, which can be used,
+    ## e.g., as session-specific secret.
     let secret = ecSharedSecret(P, Q)
     defer: zeroSequence(secret)
     result = hmacSha256(secret, nonce)
