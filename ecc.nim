@@ -321,12 +321,52 @@ proc uECC_shared_secret(public: ptr[char],
 proc ecSharedSecret*(P: ECPublicKey, Q: ECPrivateKey): ECDHSharedSecret =
     ## Generates a shared secret with someone else's public key and a private key
     ##
-    ## It is recommended that you hash the result before using it for symmetric encryption or HMAC.
+    ## It is recommended that you hash the result before using it for symmetric encryption
     var secret = newSeq[char](Q.curve.getSharedSecretSize)
     if P.curve != Q.curve: raise newException(ECCError, "keys are not on the same curve")
     let ret = uECC_shared_secret(addr P.key[0], addr Q.key[0], addr secret[0], Q.curve.getCurve)
     if ret == 0: raise newException(ECCError, "shared secret generation failed")
     return secret
+
+proc hmacSha256(key: openArray[char], message: openArray[char]): ShaDigest_256 =
+    # A HMAC SHA-256 implementation
+    const
+        BlockSize = 64
+        IPad = 0x36'u8
+        OPad = 0x5C'u8
+
+    # normalize key to block size
+    # remaining bytes are already zero (array is zero-initialized)
+    var normKey: array[BlockSize, byte]
+    if key.len > BlockSize:
+        let hashed = Sha_256.secureHash(key)
+        copyMem(addr normKey[0], addr hashed[0], hashed.len)
+    else:
+        copyMem(addr normKey[0], addr key[0], key.len)
+
+    # create inner and outer padded keys
+    var innerKey: array[BlockSize, char]
+    var outerKey: array[BlockSize, char]
+    for i in 0 ..< BlockSize:
+        innerKey[i] = chr(normKey[i] xor IPad)
+        outerKey[i] = chr(normKey[i] xor OPad)
+
+    # inner hash
+    var innerCtx = initSha256()
+    innerCtx.update(innerKey)
+    innerCtx.update(message)
+    let innerHash = innerCtx.digest()
+
+    # outer hash
+    var outerCtx = initSha256()
+    outerCtx.update(outerKey)
+    outerCtx.update(innerHash)
+    result = outerCtx.digest()
+
+proc ecHMACSharedSecret*(P: ECPublicKey, Q: ECPrivateKey, nonce: openArray[char] = []): ShaDigest_256 =
+    let secret = ecSharedSecret(P, Q)
+    defer: zeroSequence(secret)
+    result = hmacSha256(secret, nonce)
 
 proc ecHashedSharedSecret*(P: ECPublicKey, Q: ECPrivateKey, nonce: openArray[char] = [], hasher = Sha_256): seq[char] =
     ## Generates a shared secret with someone else's public key and a private key
@@ -334,6 +374,9 @@ proc ecHashedSharedSecret*(P: ECPublicKey, Q: ECPrivateKey, nonce: openArray[cha
     ## Then hashes the secret and and optional `nonce`, which must be shared by
     ## both parties, with the given `hasher`. Returns the hash, which can be used,
     ## e.g., as session-specific secret.
+    ##
+    ## Note: Is susceptible to a "Length Extension Attack" when an attacker can
+    ## control the nonce. In that situation, use ecHMACSharedSecret instead.
     let secret = ecSharedSecret(P, Q)
     defer: zeroSequence(secret)
     var ctx = initSha(hasher)
@@ -409,5 +452,16 @@ when isMainModule:
     let l2 = ecHashedSharedSecret(y.public, x.private, "ecnon")
     doAssert(k == l)
     doAssert(k != l2)
+
+    # test HMAC SHA256 with RFC4231 test vector
+    let o = hmacSha256('\x0b'.repeat(20), "Hi There")
+    doAssert($o == "b0344c61d8db38535ca8afceaf0bf12b881dc200c9833da726e9376c2e32cff7")
+
+    # test shared secret generation with HMAC SHA256
+    let p = ecHMACSharedSecret(x.public, y.private, "nonce")
+    let q = ecHMACSharedSecret(y.public, x.private, "nonce")
+    let q2 = ecHMACSharedSecret(y.public, x.private, "ecnon")
+    doAssert(p == q)
+    doAssert(p != q2)
 
     echo "All tests passed"
