@@ -328,8 +328,10 @@ proc ecSharedSecret*(P: ECPublicKey, Q: ECPrivateKey): ECDHSharedSecret =
     if ret == 0: raise newException(ECCError, "shared secret generation failed")
     return secret
 
-proc hmacSha256(key: openArray[char], message: openArray[char]): ShaDigest_256 =
-    # A HMAC SHA-256 implementation
+proc hmacSha256*(key: openArray[char], message: openArray[char]): ShaDigest_256 =
+    ## HMAC SHA-256 (hash-based message authentication code)
+    ##
+    ## Generates the HMAC SHA-256 with a given `key` and `message`.
     const
         BlockSize = 64
         IPad = 0x36'u8
