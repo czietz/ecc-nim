@@ -376,7 +376,7 @@ proc ecHMACSharedSecret*(P: ECPublicKey, Q: ECPrivateKey, info: openArray[char] 
     defer: zeroSequence(secret)
     # HKDF extract step
     # why a null salt is used: https://soatok.blog/2021/11/17/understanding-hkdf/
-    let nullSalt = '\0'.repeat(sizeof(ShaDigest_256))
+    let nullSalt = default(array[sizeof(ShaDigest_256),char])
     let pseudoRandomKey = hmacSha256(nullSalt, secret)
     defer: zeroSequence(pseudoRandomKey)
     # HKDF expand step: just one round
