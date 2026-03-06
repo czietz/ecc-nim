@@ -113,7 +113,7 @@ proc getCurve*(P: ECPublicKey): Curve = P.curve     ## Returns the Curve_ the ke
 
 #-# HELPERS FOR PRIVATE KEY DESTRUCTION #-#
 
-proc zeroSequence*[T](s: seq[T]) =
+proc zeroSequence*[T](s: openArray[T]) =
     ## Zeroes the contents of a sequence
     when supportsCopyMem(T):
         if s.len > 0:
@@ -365,15 +365,22 @@ proc hmacSha256*(key: openArray[char], message: openArray[char]): ShaDigest_256 
     outerCtx.update(innerHash)
     result = outerCtx.digest()
 
-proc ecHMACSharedSecret*(P: ECPublicKey, Q: ECPrivateKey, nonce: openArray[char] = []): ShaDigest_256 =
+proc ecHMACSharedSecret*(P: ECPublicKey, Q: ECPrivateKey, info: openArray[char] = []): ShaDigest_256 =
     ## Generates a shared secret with someone else's public key and a private key
     ##
-    ## Then performs a HMAC SHA256 with the shared secret as key and the optional `nonce`,
-    ## which must be shared by both parties. Returns the HMAC, which can be used,
-    ## e.g., as session-specific secret.
+    ## Then performs a HKDF (HMAC-based Extract-and-Expand Key Derivation Function)
+    ## with the shared secret as key and the optional `info`, which must be shared
+    ## by both parties. Returns the HMAC SHA-256, which can be used, e.g., as
+    ## session-specific secret.
     let secret = ecSharedSecret(P, Q)
     defer: zeroSequence(secret)
-    result = hmacSha256(secret, nonce)
+    # HKDF extract step
+    # why a null salt is used: https://soatok.blog/2021/11/17/understanding-hkdf/
+    let nullSalt = '\0'.repeat(sizeof(ShaDigest_256))
+    let pseudoRandomKey = hmacSha256(nullSalt, secret)
+    defer: zeroSequence(pseudoRandomKey)
+    # HKDF expand step: just one round
+    result = hmacSha256(pseudoRandomKey, @info & '\x01')
 
 proc ecHashedSharedSecret*(P: ECPublicKey, Q: ECPrivateKey, nonce: openArray[char] = [], hasher = Sha_256): seq[char] =
     ## Generates a shared secret with someone else's public key and a private key
@@ -464,7 +471,7 @@ when isMainModule:
     let o = hmacSha256('\x0b'.repeat(20), "Hi There")
     doAssert($o == "b0344c61d8db38535ca8afceaf0bf12b881dc200c9833da726e9376c2e32cff7")
 
-    # test shared secret generation with HMAC SHA256
+    # test shared secret generation with HKDF SHA256
     let p = ecHMACSharedSecret(x.public, y.private, "nonce")
     let q = ecHMACSharedSecret(y.public, x.private, "nonce")
     let q2 = ecHMACSharedSecret(y.public, x.private, "ecnon")
