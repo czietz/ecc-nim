@@ -1,6 +1,6 @@
 [submodule "micro-ecc"]
 	path = micro-ecc
-	url = https://github.com/kmackay/micro-ecc.git
+	url = https://github.com/czietz/micro-ecc.git
 [submodule "checksums"]
 	path = checksums
 	url = https://github.com/nim-lang/checksums.git
